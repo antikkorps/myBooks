@@ -1,5 +1,6 @@
 import Fastify from "fastify"
-import fastifyMysql from "@fastify/mysql"
+import dbConnector from "./plugins/db.ts"
+import booksRoutes from "./routes/books.ts"
 import firstRoute from "./routes/firstRoute.ts"
 const isDev = process.env.NODE_ENV !== "production"
 
@@ -16,18 +17,10 @@ const fastify = Fastify({
       }
     : true,
 })
-
-fastify.register(fastifyMysql, {
-  promise: true,
-  connectionString: process.env.MYSQL_CONNECTION_STRING,
-})
-
-fastify.after(async () => {
-  const [rows] = await fastify.mysql.query("SELECT 1+1 AS result")
-  fastify.log.info({ rows }, "MySQL connected")
-})
+fastify.register(dbConnector)
 
 fastify.register(firstRoute)
+fastify.register(booksRoutes)
 
 fastify.listen({ port: 8080, host: "0.0.0.0" }, function (err, address) {
   if (err) {
