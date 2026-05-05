@@ -42,6 +42,8 @@ const createBookSchema = {
 }
 
 async function booksRoutes(fastify: FastifyInstance, options: unknown) {
+  fastify.addHook("preHandler", fastify.authenticate)
+
   fastify.get("/books", { schema: getBooksSchema }, async (request, reply) => {
     const [rows] = await fastify.mysql.query("SELECT * FROM books")
     return rows

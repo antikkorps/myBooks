@@ -10,6 +10,10 @@ const dbConnector = fp(async function (fastify: FastifyInstance, options: unknow
 
   const [rows] = await fastify.mysql.query("SELECT 1+1 AS result")
   fastify.log.info({ rows }, "MySQL connected")
+
+  fastify.addHook("onClose", async () => {
+    fastify.log.info("Closing MySQL connection")
+  })
 })
 
 export default dbConnector
