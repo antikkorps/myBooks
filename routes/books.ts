@@ -1,5 +1,5 @@
 import { type FastifyInstance } from "fastify"
-import type { ResultSetHeader } from "mysql2"
+import { buildBooksService } from "../services/index.ts"
 
 const getBooksSchema = {
   response: {
@@ -55,41 +55,17 @@ const createBookSchema = {
 
 async function booksRoutes(fastify: FastifyInstance, options: unknown) {
   fastify.addHook("preHandler", fastify.authenticate)
-
+  fastify.decorate("booksService", buildBooksService(fastify.mysql))
   fastify.get("/books", { schema: getBooksSchema }, async (request, reply) => {
-    const [rows] = await fastify.mysql.query(
-      `SELECT 
-        b.id, 
-        b.title, 
-        b.published_year,                                                                  
-        JSON_OBJECT('id', a.id, 'name', a.name) AS author                                                 
-        FROM books b                                                                                             
-        JOIN authors a ON a.id = b.author_id`,
-    )
-    return rows
+    return fastify.booksService.getAll()
   })
 
   fastify.post<{
     Body: { title: string; author_id: number; published_year?: number }
   }>("/books", { schema: createBookSchema }, async (request, reply) => {
     const { title, author_id, published_year } = request.body
-    const [result] = await fastify.mysql.query<ResultSetHeader>(
-      "INSERT INTO books (title, author_id, published_year) VALUES (?, ?, ?)",
-      [title, author_id, published_year],
-    )
-    const [rows] = await fastify.mysql.query(
-      `SELECT
-        b.id,
-        b.title,
-        b.published_year,
-        JSON_OBJECT('id', a.id, 'name', a.name) AS author
-      FROM books b
-      JOIN authors a ON a.id = b.author_id
-      WHERE b.id = ?`,
-      [result.insertId],
-    )
     reply.code(201)
-    return (rows as any[])[0]
+    return fastify.booksService.create(title, published_year, author_id)
   })
 }
 
