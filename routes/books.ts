@@ -65,7 +65,7 @@ async function booksRoutes(fastify: FastifyInstance, options: unknown) {
   }>("/books", { schema: createBookSchema }, async (request, reply) => {
     const { title, author_id, published_year } = request.body
     reply.code(201)
-    return fastify.booksService.create(title, published_year, author_id)
+    return fastify.booksService.create(title, published_year ?? null, author_id)
   })
 }
 

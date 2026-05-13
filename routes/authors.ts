@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify"
-import type { ResultSetHeader, RowDataPacket } from "mysql2"
-
+import { buildAuthorsService } from "../services/index.ts"
 const getAuthorsSchema = {
   description: "Get all authors",
   tags: ["Authors"],
@@ -62,9 +61,9 @@ const getAuthorSchema = {
 
 async function authorRoutes(fastify: FastifyInstance, options: unknown) {
   fastify.addHook("preHandler", fastify.authenticate)
+  fastify.decorate("authorsService", buildAuthorsService(fastify.mysql))
   fastify.get("/authors", { schema: getAuthorsSchema }, async (request, reply) => {
-    const [rows] = await fastify.mysql.query("SELECT id, name FROM authors")
-    return rows
+    return fastify.authorsService.getAll()
   })
 
   fastify.post<{ Body: { name: string } }>(
@@ -72,17 +71,8 @@ async function authorRoutes(fastify: FastifyInstance, options: unknown) {
     { schema: postAuthorSchema },
     async (request, reply) => {
       const { name } = request.body
-      const [result] = await fastify.mysql.query<ResultSetHeader>(
-        "INSERT INTO authors (name) VALUES (?)",
-        [name],
-      )
-      const authorId = result.insertId
-      const [rows] = await fastify.mysql.query<RowDataPacket[]>(
-        "SELECT id, name FROM authors WHERE id = ?",
-        [authorId],
-      )
       reply.code(201)
-      return rows[0]
+      return fastify.authorsService.create(name)
     },
   )
 
@@ -91,15 +81,12 @@ async function authorRoutes(fastify: FastifyInstance, options: unknown) {
     { schema: getAuthorSchema },
     async (request, reply) => {
       const { id } = request.params
-      const [rows] = await fastify.mysql.query<RowDataPacket[]>(
-        "SELECT id, name FROM authors WHERE id = ?",
-        [id],
-      )
-      if (rows.length === 0) {
+      const author = await fastify.authorsService.getById(id)
+      if (!author) {
         reply.code(404)
         return { error: "Author not found" }
       }
-      return rows[0]
+      return author
     },
   )
 }

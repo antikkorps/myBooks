@@ -23,7 +23,7 @@ export function buildBooksService(mysql: MySQLPromisePool) {
     const [books] = await mysql.query<BookRow[]>(SELECT_BOOK + " WHERE b.id = ?", [id])
     return books[0]
   }
-  async function create(title: string, publishedYear: number, authorId: number) {
+  async function create(title: string, publishedYear: number | null, authorId: number) {
     const [result] = await mysql.query<ResultSetHeader>(
       `INSERT INTO books (
         title, published_year, author_id
