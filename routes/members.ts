@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify"
-import type { ResultSetHeader, RowDataPacket } from "mysql2"
+import { buildMembersService } from "../services/index.ts"
 
 const memberProperties = {
   id: { type: "integer" },
@@ -49,17 +49,12 @@ const postMemberSchema = {
   },
 }
 
-const SELECT_MEMBER = `
-  SELECT id, name, email, DATE_FORMAT(joined_at, '%Y-%m-%d') AS joined_at
-  FROM members
-`
-
 async function membersRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate)
+  fastify.decorate("membersService", buildMembersService(fastify.mysql))
 
-  fastify.get("/members", { schema: getMembersSchema }, async () => {
-    const [rows] = await fastify.mysql.query<RowDataPacket[]>(SELECT_MEMBER)
-    return rows
+  fastify.get("/members", { schema: getMembersSchema }, async (request, reply) => {
+    return fastify.membersService.getAll()
   })
 
   fastify.get<{ Params: { id: number } }>(
@@ -67,15 +62,12 @@ async function membersRoutes(fastify: FastifyInstance) {
     { schema: getMemberSchema },
     async (request, reply) => {
       const { id } = request.params
-      const [rows] = await fastify.mysql.query<RowDataPacket[]>(
-        `${SELECT_MEMBER} WHERE id = ?`,
-        [id],
-      )
-      if (rows.length === 0) {
+      const member = await fastify.membersService.getById(id)
+      if (!member) {
         reply.code(404)
-        return { error: "Member not found" }
+        return { message: "Member not found" }
       }
-      return rows[0]
+      return member
     },
   )
 
@@ -83,21 +75,8 @@ async function membersRoutes(fastify: FastifyInstance) {
     Body: { name: string; email: string; joined_at?: string }
   }>("/members", { schema: postMemberSchema }, async (request, reply) => {
     const { name, email, joined_at } = request.body
-    const [result] = joined_at
-      ? await fastify.mysql.query<ResultSetHeader>(
-          "INSERT INTO members (name, email, joined_at) VALUES (?, ?, ?)",
-          [name, email, joined_at],
-        )
-      : await fastify.mysql.query<ResultSetHeader>(
-          "INSERT INTO members (name, email) VALUES (?, ?)",
-          [name, email],
-        )
-    const [rows] = await fastify.mysql.query<RowDataPacket[]>(
-      `${SELECT_MEMBER} WHERE id = ?`,
-      [result.insertId],
-    )
     reply.code(201)
-    return rows[0]
+    return fastify.membersService.create(name, email, joined_at)
   })
 }
 

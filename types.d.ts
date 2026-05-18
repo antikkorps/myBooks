@@ -1,6 +1,6 @@
 import type { MySQLPromisePool } from "@fastify/mysql"
 import "fastify"
-import type { AuthorsService, BooksService } from "./services/index.ts"
+import type { AuthorsService, BooksService, MembersService } from "./services/index.ts"
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -8,6 +8,7 @@ declare module "fastify" {
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
     booksService: BooksService
     authorsService: AuthorsService
+    membersService: MembersService
   }
   interface FastifyRequest {
     currentUser: string | null
