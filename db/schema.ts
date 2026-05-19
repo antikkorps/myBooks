@@ -1,0 +1,40 @@
+import { sql } from "drizzle-orm"
+import { date, int, mysqlTable, text, varchar } from "drizzle-orm/mysql-core"
+
+export const authors = mysqlTable("authors", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  biography: text("biography"),
+  birthYear: int("birth_year"),
+})
+
+export const books = mysqlTable("books", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  authorId: int("author_id")
+    .notNull()
+    .references(() => authors.id, { onDelete: "restrict", onUpdate: "cascade" }),
+  publishedYear: int("published_year"),
+})
+
+export const members = mysqlTable("members", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  joinedAt: date("joined_at", { mode: "string" })
+    .notNull()
+    .default(sql`(CURRENT_DATE)`),
+})
+
+export const loans = mysqlTable("loans", {
+  id: int("id").autoincrement().primaryKey(),
+  bookId: int("book_id")
+    .notNull()
+    .references(() => books.id, { onDelete: "restrict", onUpdate: "cascade" }),
+  memberId: int("member_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "restrict", onUpdate: "cascade" }),
+  borrowedAt: date("borrowed_at", { mode: "string" }).notNull(),
+  dueDate: date("due_date", { mode: "string" }).notNull(),
+  returnedAt: date("returned_at", { mode: "string" }),
+})
