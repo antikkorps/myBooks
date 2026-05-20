@@ -1,35 +1,50 @@
-import { MySQLPromisePool } from "@fastify/mysql"
-import type { ResultSetHeader, RowDataPacket } from "mysql2"
+import { eq } from "drizzle-orm"
+import { MySql2Database } from "drizzle-orm/mysql2"
+import * as relations from "../db/relations.ts"
+import * as schema from "../db/schema.ts"
 
-interface BookRow extends RowDataPacket {
-  id: number
-  title: string
-  published_year: number | null
-  author: { id: number; name: string }
-}
+type DB = MySql2Database<typeof schema & typeof relations>
 
-const SELECT_BOOK = `
-SELECT b.id, b.title, b.published_year, JSON_OBJECT('id', a.id, 'name', a.name) AS author
-FROM books b
-JOIN authors a ON a.id = b.author_id
-`
-
-export function buildBooksService(mysql: MySQLPromisePool) {
+export function buildBooksService(db: DB) {
   async function getAll() {
-    const [books] = await mysql.query<BookRow[]>(SELECT_BOOK)
-    return books
+    return db.query.books.findMany({
+      columns: {
+        id: true,
+        title: true,
+        publishedYear: true,
+      },
+      with: {
+        author: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    })
   }
   async function getById(id: number) {
-    const [books] = await mysql.query<BookRow[]>(SELECT_BOOK + " WHERE b.id = ?", [id])
-    return books[0]
+    return db.query.books.findFirst({
+      columns: {
+        id: true,
+        title: true,
+        publishedYear: true,
+      },
+      with: {
+        author: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      where: eq(schema.books.id, id),
+    })
   }
   async function create(title: string, publishedYear: number | null, authorId: number) {
-    const [result] = await mysql.query<ResultSetHeader>(
-      `INSERT INTO books (
-        title, published_year, author_id
-        ) VALUES (?, ?, ?)`,
-      [title, publishedYear, authorId],
-    )
+    const [result] = await db
+      .insert(schema.books)
+      .values({ title, publishedYear, authorId })
     return getById(result.insertId)
   }
 

@@ -10,7 +10,7 @@ const getBooksSchema = {
         properties: {
           id: { type: "integer" },
           title: { type: "string" },
-          published_year: { type: "integer", nullable: true },
+          publishedYear: { type: "integer", nullable: true },
           author: {
             type: "object",
             properties: {
@@ -27,11 +27,11 @@ const getBooksSchema = {
 const createBookSchema = {
   body: {
     type: "object",
-    required: ["title", "author_id"],
+    required: ["title", "authorId"],
     properties: {
       title: { type: "string" },
-      author_id: { type: "integer" },
-      published_year: { type: "integer", nullable: true },
+      authorId: { type: "integer" },
+      publishedYear: { type: "integer", nullable: true },
     },
   },
   response: {
@@ -47,7 +47,7 @@ const createBookSchema = {
             name: { type: "string" },
           },
         },
-        published_year: { type: "integer", nullable: true },
+        publishedYear: { type: "integer", nullable: true },
       },
     },
   },
@@ -55,17 +55,17 @@ const createBookSchema = {
 
 async function booksRoutes(fastify: FastifyInstance, options: unknown) {
   fastify.addHook("preHandler", fastify.authenticate)
-  fastify.decorate("booksService", buildBooksService(fastify.mysql))
+  fastify.decorate("booksService", buildBooksService(fastify.db))
   fastify.get("/books", { schema: getBooksSchema }, async (request, reply) => {
     return fastify.booksService.getAll()
   })
 
   fastify.post<{
-    Body: { title: string; author_id: number; published_year?: number }
+    Body: { title: string; authorId: number; publishedYear?: number | null }
   }>("/books", { schema: createBookSchema }, async (request, reply) => {
-    const { title, author_id, published_year } = request.body
+    const { title, publishedYear, authorId } = request.body
     reply.code(201)
-    return fastify.booksService.create(title, published_year ?? null, author_id)
+    return fastify.booksService.create(title, publishedYear ?? null, authorId)
   })
 }
 
