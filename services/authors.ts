@@ -1,33 +1,27 @@
-import { MySQLPromisePool } from "@fastify/mysql"
-import type { ResultSetHeader, RowDataPacket } from "mysql2"
+import { eq } from "drizzle-orm"
+import { MySql2Database } from "drizzle-orm/mysql2"
+import * as relations from "../db/relations.ts"
+import * as schema from "../db/schema.ts"
 
-interface AuthorRow extends RowDataPacket {
-  id: number
-  name: string
-}
+type DB = MySql2Database<typeof schema & typeof relations>
 
-const SELECT_AUTHORS = `
-SELECT id, name
-FROM authors
-`
-
-export function buildAuthorsService(mysql: MySQLPromisePool) {
+export function buildAuthorsService(db: DB) {
   async function getAll() {
-    const [authors] = await mysql.query<AuthorRow[]>(SELECT_AUTHORS)
-    return authors
+    return db.query.authors.findMany()
   }
   async function getById(id: number) {
-    const [authors] = await mysql.query<AuthorRow[]>(SELECT_AUTHORS + " WHERE id = ?", [
-      id,
-    ])
-    return authors[0]
+    return db.query.authors.findFirst({
+      where: eq(schema.authors.id, id),
+    })
   }
-  async function create(name: string) {
-    const [result] = await mysql.query<ResultSetHeader>(
-      `INSERT INTO authors (name) VALUES (?)`,
-      [name],
-    )
-
+  async function create(
+    name: string,
+    biography: string | null,
+    birthYear: number | null,
+  ) {
+    const [result] = await db
+      .insert(schema.authors)
+      .values({ name, biography, birthYear })
     return getById(result.insertId)
   }
 

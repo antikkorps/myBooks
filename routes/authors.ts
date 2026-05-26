@@ -11,6 +11,8 @@ const getAuthorsSchema = {
         properties: {
           id: { type: "integer" },
           name: { type: "string" },
+          biography: { type: "string", nullable: true },
+          birthYear: { type: "integer", nullable: true },
         },
       },
     },
@@ -24,6 +26,8 @@ const postAuthorSchema = {
     type: "object",
     properties: {
       name: { type: "string" },
+      biography: { type: "string", nullable: true },
+      birthYear: { type: "integer", nullable: true },
     },
     required: ["name"],
   },
@@ -33,6 +37,8 @@ const postAuthorSchema = {
       properties: {
         id: { type: "integer" },
         name: { type: "string" },
+        biography: { type: "string", nullable: true },
+        birthYear: { type: "integer", nullable: true },
       },
     },
   },
@@ -54,6 +60,8 @@ const getAuthorSchema = {
       properties: {
         id: { type: "integer" },
         name: { type: "string" },
+        biography: { type: "string", nullable: true },
+        birthYear: { type: "integer", nullable: true },
       },
     },
   },
@@ -61,20 +69,18 @@ const getAuthorSchema = {
 
 async function authorRoutes(fastify: FastifyInstance, options: unknown) {
   fastify.addHook("preHandler", fastify.authenticate)
-  fastify.decorate("authorsService", buildAuthorsService(fastify.mysql))
+  fastify.decorate("authorsService", buildAuthorsService(fastify.db))
   fastify.get("/authors", { schema: getAuthorsSchema }, async (request, reply) => {
     return fastify.authorsService.getAll()
   })
 
-  fastify.post<{ Body: { name: string } }>(
-    "/authors",
-    { schema: postAuthorSchema },
-    async (request, reply) => {
-      const { name } = request.body
-      reply.code(201)
-      return fastify.authorsService.create(name)
-    },
-  )
+  fastify.post<{
+    Body: { name: string; biography?: string | null; birthYear?: number | null }
+  }>("/authors", { schema: postAuthorSchema }, async (request, reply) => {
+    const { name, biography, birthYear } = request.body
+    reply.code(201)
+    return fastify.authorsService.create(name, biography ?? null, birthYear ?? null)
+  })
 
   fastify.get<{ Params: { id: number } }>(
     "/authors/:id",
