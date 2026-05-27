@@ -5,7 +5,7 @@ const memberProperties = {
   id: { type: "integer" },
   name: { type: "string" },
   email: { type: "string" },
-  joined_at: { type: "string" },
+  joinedAt: { type: "string" },
 }
 
 const getMembersSchema = {
@@ -41,7 +41,7 @@ const postMemberSchema = {
     properties: {
       name: { type: "string" },
       email: { type: "string", format: "email" },
-      joined_at: { type: "string", format: "date" },
+      joinedAt: { type: "string", format: "date" },
     },
   },
   response: {
@@ -51,7 +51,7 @@ const postMemberSchema = {
 
 async function membersRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate)
-  fastify.decorate("membersService", buildMembersService(fastify.mysql))
+  fastify.decorate("membersService", buildMembersService(fastify.db))
 
   fastify.get("/members", { schema: getMembersSchema }, async (request, reply) => {
     return fastify.membersService.getAll()
@@ -72,12 +72,26 @@ async function membersRoutes(fastify: FastifyInstance) {
   )
 
   fastify.post<{
-    Body: { name: string; email: string; joined_at?: string }
+    Body: { name: string; email: string; joinedAt?: string }
   }>("/members", { schema: postMemberSchema }, async (request, reply) => {
-    const { name, email, joined_at } = request.body
+    const { name, email, joinedAt } = request.body
     reply.code(201)
-    return fastify.membersService.create(name, email, joined_at)
+    return fastify.membersService.create(name, email, joinedAt)
   })
+
+  fastify.delete<{ Params: { id: number } }>(
+    "/members/:id",
+    { schema: getMemberSchema },
+    async (request, reply) => {
+      const { id } = request.params
+      const member = await fastify.membersService.deleteById(id)
+      if (!member) {
+        reply.code(404)
+        return { message: "Member not found" }
+      }
+      return member
+    },
+  )
 }
 
 export default membersRoutes

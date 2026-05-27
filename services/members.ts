@@ -1,46 +1,33 @@
-import { MySQLPromisePool } from "@fastify/mysql"
-import type { ResultSetHeader, RowDataPacket } from "mysql2"
+import { eq } from "drizzle-orm"
+import { MySql2Database } from "drizzle-orm/mysql2"
+import * as relations from "../db/relations.ts"
+import * as schema from "../db/schema.ts"
 
-const SELECT_MEMBERS = `
-SELECT id, name, email, DATE_FORMAT(joined_at, '%Y-%m-%d') AS joined_at
-FROM members
-`
+type DB = MySql2Database<typeof schema & typeof relations>
 
-export function buildMembersService(mysql: MySQLPromisePool) {
+export function buildMembersService(db: DB) {
   async function getAll() {
-    const [members] = await mysql.query<RowDataPacket[]>(SELECT_MEMBERS)
-    return members
+    return db.query.members.findMany()
   }
   async function getById(id: number) {
-    const [members] = await mysql.query<RowDataPacket[]>(
-      SELECT_MEMBERS + " WHERE id = ?",
-      [id],
-    )
-    return members[0]
+    return db.query.members.findFirst({
+      where: eq(schema.members.id, id),
+    })
   }
-  async function create(name: string, email: string, joined_at?: string) {
-    const [result] = joined_at
-      ? await mysql.query<ResultSetHeader>(
-          `INSERT INTO members (name, email, joined_at) VALUES (?, ?, ?)`,
-          [name, email, joined_at],
-        )
-      : await mysql.query<ResultSetHeader>(
-          `INSERT INTO members (name, email) VALUES (?, ?)`,
-          [name, email],
-        )
+
+  async function create(name: string, email: string, joinedAt?: string) {
+    const [result] = await db.insert(schema.members).values({ name, email, joinedAt })
     return getById(result.insertId)
   }
 
   async function getByEmail(email: string) {
-    const [members] = await mysql.query<RowDataPacket[]>(
-      SELECT_MEMBERS + " WHERE email = ?",
-      [email],
-    )
-    return members[0]
+    return db.query.members.findFirst({
+      where: eq(schema.members.email, email),
+    })
   }
 
   async function deleteById(id: number) {
-    await mysql.query(`DELETE FROM members WHERE id = ?`, [id])
+    return db.delete(schema.members).where(eq(schema.members.id, id))
   }
 
   return { getAll, getById, create, getByEmail, deleteById }
