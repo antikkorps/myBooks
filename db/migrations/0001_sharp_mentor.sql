@@ -1,0 +1,2 @@
+ALTER TABLE `books` ADD `owner_id` int NOT NULL;--> statement-breakpoint
+ALTER TABLE `books` ADD CONSTRAINT `books_owner_id_users_id_fk` FOREIGN KEY (`owner_id`) REFERENCES `users`(`id`) ON DELETE restrict ON UPDATE cascade;

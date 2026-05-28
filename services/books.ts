@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { MySql2Database } from "drizzle-orm/mysql2"
 import * as relations from "../db/relations.ts"
 import * as schema from "../db/schema.ts"
@@ -6,7 +6,7 @@ import * as schema from "../db/schema.ts"
 type DB = MySql2Database<typeof schema & typeof relations>
 
 export function buildBooksService(db: DB) {
-  async function getAll() {
+  async function getAll(ownerId: number) {
     return db.query.books.findMany({
       columns: {
         id: true,
@@ -21,9 +21,10 @@ export function buildBooksService(db: DB) {
           },
         },
       },
+      where: eq(schema.books.ownerId, ownerId),
     })
   }
-  async function getById(id: number) {
+  async function getById(id: number, ownerId: number) {
     return db.query.books.findFirst({
       columns: {
         id: true,
@@ -38,14 +39,19 @@ export function buildBooksService(db: DB) {
           },
         },
       },
-      where: eq(schema.books.id, id),
+      where: and(eq(schema.books.id, id), eq(schema.books.ownerId, ownerId)),
     })
   }
-  async function create(title: string, publishedYear: number | null, authorId: number) {
+  async function create(
+    title: string,
+    publishedYear: number | null,
+    authorId: number,
+    ownerId: number,
+  ) {
     const [result] = await db
       .insert(schema.books)
-      .values({ title, publishedYear, authorId })
-    return getById(result.insertId)
+      .values({ title, publishedYear, authorId, ownerId })
+    return getById(result.insertId, ownerId)
   }
 
   return { getAll, getById, create }

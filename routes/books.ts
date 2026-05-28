@@ -57,7 +57,7 @@ async function booksRoutes(fastify: FastifyInstance, options: unknown) {
   fastify.addHook("preHandler", fastify.authenticate)
   fastify.decorate("booksService", buildBooksService(fastify.db))
   fastify.get("/books", { schema: getBooksSchema }, async (request, reply) => {
-    return fastify.booksService.getAll()
+    return fastify.booksService.getAll(request.currentUser!.id)
   })
 
   fastify.post<{
@@ -65,7 +65,12 @@ async function booksRoutes(fastify: FastifyInstance, options: unknown) {
   }>("/books", { schema: createBookSchema }, async (request, reply) => {
     const { title, publishedYear, authorId } = request.body
     reply.code(201)
-    return fastify.booksService.create(title, publishedYear ?? null, authorId)
+    return fastify.booksService.create(
+      title,
+      publishedYear ?? null,
+      authorId,
+      request.currentUser!.id,
+    )
   })
 }
 

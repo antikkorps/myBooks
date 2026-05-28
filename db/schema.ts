@@ -22,6 +22,12 @@ export const books = mysqlTable("books", {
   authorId: int("author_id")
     .notNull()
     .references(() => authors.id, { onDelete: "restrict", onUpdate: "cascade" }),
+  ownerId: int("owner_id")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "restrict",
+      onUpdate: "cascade",
+    }),
   publishedYear: int("published_year"),
 })
 
