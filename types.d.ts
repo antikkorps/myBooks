@@ -1,5 +1,11 @@
 import "fastify"
-import type { AuthorsService, BooksService, MembersService } from "./services/index.ts"
+import type {
+  AuthorsService,
+  BooksService,
+  MembersService,
+  User,
+  UsersService,
+} from "./services/index.ts"
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -7,8 +13,9 @@ declare module "fastify" {
     booksService: BooksService
     authorsService: AuthorsService
     membersService: MembersService
+    usersService: UsersService
   }
   interface FastifyRequest {
-    currentUser: string | null
+    currentUser: User | null
   }
 }

@@ -1,5 +1,13 @@
 import { sql } from "drizzle-orm"
-import { date, int, mysqlTable, text, varchar } from "drizzle-orm/mysql-core"
+import { date, int, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core"
+
+export const users = mysqlTable("users", {
+  id: int("id").autoincrement().primaryKey(),
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
 
 export const authors = mysqlTable("authors", {
   id: int("id").autoincrement().primaryKey(),
