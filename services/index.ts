@@ -1,4 +1,5 @@
 export * from "./authors.ts"
 export * from "./books.ts"
+export * from "./loans.ts"
 export * from "./members.ts"
 export * from "./users.ts"

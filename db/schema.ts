@@ -45,9 +45,14 @@ export const loans = mysqlTable("loans", {
   bookId: int("book_id")
     .notNull()
     .references(() => books.id, { onDelete: "restrict", onUpdate: "cascade" }),
-  memberId: int("member_id")
-    .notNull()
-    .references(() => members.id, { onDelete: "restrict", onUpdate: "cascade" }),
+  borrowerMemberId: int("borrower_member_id").references(() => members.id, {
+    onDelete: "restrict",
+    onUpdate: "cascade",
+  }),
+  borrowerUserId: int("borrower_user_id").references(() => users.id, {
+    onDelete: "restrict",
+    onUpdate: "cascade",
+  }),
   borrowedAt: date("borrowed_at", { mode: "string" }).notNull(),
   dueDate: date("due_date", { mode: "string" }).notNull(),
   returnedAt: date("returned_at", { mode: "string" }),

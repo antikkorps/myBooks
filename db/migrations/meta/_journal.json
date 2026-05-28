@@ -15,6 +15,13 @@
       "when": 1779967200187,
       "tag": "0001_sharp_mentor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1779971102835,
+      "tag": "0002_calm_black_queen",
+      "breakpoints": true
     }
   ]
 }

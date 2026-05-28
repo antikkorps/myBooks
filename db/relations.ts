@@ -3,6 +3,7 @@ import { authors, books, loans, members, users } from "./schema.ts"
 
 export const usersRelations = relations(users, ({ many }) => ({
   books: many(books),
+  borrowedLoans: many(loans),
 }))
 
 export const authorsRelations = relations(authors, ({ many }) => ({
@@ -22,7 +23,7 @@ export const booksRelations = relations(books, ({ one, many }) => ({
 }))
 
 export const membersRelations = relations(members, ({ many }) => ({
-  loans: many(loans),
+  borrowedLoans: many(loans),
 }))
 
 export const loansRelations = relations(loans, ({ one }) => ({
@@ -30,8 +31,12 @@ export const loansRelations = relations(loans, ({ one }) => ({
     fields: [loans.bookId],
     references: [books.id],
   }),
-  member: one(members, {
-    fields: [loans.memberId],
+  borrowerMember: one(members, {
+    fields: [loans.borrowerMemberId],
     references: [members.id],
+  }),
+  borrowerUser: one(users, {
+    fields: [loans.borrowerUserId],
+    references: [users.id],
   }),
 }))

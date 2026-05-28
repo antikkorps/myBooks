@@ -2,6 +2,7 @@ import "fastify"
 import type {
   AuthorsService,
   BooksService,
+  LoansService,
   MembersService,
   User,
   UsersService,
@@ -14,6 +15,7 @@ declare module "fastify" {
     authorsService: AuthorsService
     membersService: MembersService
     usersService: UsersService
+    loansService: LoansService
   }
   interface FastifyRequest {
     currentUser: User | null
