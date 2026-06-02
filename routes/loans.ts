@@ -100,7 +100,10 @@ async function loansRoutes(fastify: FastifyInstance) {
     "/loans",
     { schema: getLoansSchema },
     async (request) => {
-      return fastify.loansService.listAsOwner(request.currentUser!.id, request.query.bookId)
+      return fastify.loansService.listAsOwner(
+        request.currentUser!.id,
+        request.query.bookId,
+      )
     },
   )
 
@@ -119,55 +122,22 @@ async function loansRoutes(fastify: FastifyInstance) {
   }>("/loans", { schema: createLoanSchema }, async (request, reply) => {
     const { bookId, borrowerUserId, borrowerMemberId, borrowedAt, dueDate } = request.body
 
-    try {
-      const loan = await fastify.loansService.create(
-        { bookId, borrowerUserId, borrowerMemberId, borrowedAt, dueDate },
-        request.currentUser!.id,
-      )
-      reply.code(201)
-      return loan
-    } catch (err) {
-      if (err instanceof Error) {
-        if (err.message === "BOOK_NOT_OWNED") {
-          reply.code(404)
-          return { error: "Not Found", message: "Book not found or not yours" }
-        }
-        if (err.message === "BOOK_ALREADY_LENT") {
-          reply.code(409)
-          return { error: "Conflict", message: "Book is already lent" }
-        }
-        if (err.message === "UNKNOWN_BORROWER") {
-          reply.code(400)
-          return { error: "Bad Request", message: "Borrower not found" }
-        }
-        if (err.message === "INVALID_BORROWER") {
-          reply.code(400)
-          return {
-            error: "Bad Request",
-            message: "Provide exactly one of borrowerUserId or borrowerMemberId",
-          }
-        }
-      }
-      throw err
-    }
+    const loan = await fastify.loansService.create(
+      { bookId, borrowerUserId, borrowerMemberId, borrowedAt, dueDate },
+      request.currentUser!.id,
+    )
+    reply.code(201)
+    return loan
   })
 
   fastify.patch<{ Params: { id: number } }>(
     "/loans/:id/return",
     { schema: returnLoanSchema },
-    async (request, reply) => {
-      try {
-        return await fastify.loansService.markAsReturned(
-          request.params.id,
-          request.currentUser!.id,
-        )
-      } catch (err) {
-        if (err instanceof Error && err.message === "BOOK_NOT_OWNED") {
-          reply.code(404)
-          return { error: "Not Found", message: "Loan not found or book not yours" }
-        }
-        throw err
-      }
+    async (request) => {
+      return await fastify.loansService.markAsReturned(
+        request.params.id,
+        request.currentUser!.id,
+      )
     },
   )
 }

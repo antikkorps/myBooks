@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm"
 import { MySql2Database } from "drizzle-orm/mysql2"
 import * as relations from "../db/relations.ts"
 import * as schema from "../db/schema.ts"
+import { AppError } from "../types/error.ts"
 import type { CreateLoanInput } from "../types/loans.ts"
 
 type DB = MySql2Database<typeof schema & typeof relations>
@@ -11,29 +12,33 @@ export function buildLoansService(db: DB) {
     const { bookId, borrowerUserId, borrowerMemberId, borrowedAt, dueDate } = input
 
     if (!!borrowerUserId === !!borrowerMemberId) {
-      throw new Error("INVALID_BORROWER")
+      throw new AppError(
+        "INVALID_BORROWER",
+        400,
+        "Exactly one of borrowerUserId or borrowerMemberId must be provided",
+      )
     }
 
     const book = await db.query.books.findFirst({
       where: and(eq(schema.books.id, bookId), eq(schema.books.ownerId, ownerId)),
     })
-    if (!book) throw new Error("BOOK_NOT_OWNED")
+    if (!book) throw new AppError("BOOK_NOT_OWNED", 404, "Book not found or not yours")
 
     const existing = await db.query.loans.findFirst({
       where: and(eq(schema.loans.bookId, bookId), isNull(schema.loans.returnedAt)),
     })
-    if (existing) throw new Error("BOOK_ALREADY_LENT")
+    if (existing) throw new AppError("BOOK_ALREADY_LENT", 409, "Book is already lent")
 
     if (borrowerUserId) {
       const user = await db.query.users.findFirst({
         where: eq(schema.users.id, borrowerUserId),
       })
-      if (!user) throw new Error("UNKNOWN_BORROWER")
+      if (!user) throw new AppError("UNKNOWN_BORROWER", 404, "Borrower not found")
     } else if (borrowerMemberId) {
       const member = await db.query.members.findFirst({
         where: eq(schema.members.id, borrowerMemberId),
       })
-      if (!member) throw new Error("UNKNOWN_BORROWER")
+      if (!member) throw new AppError("UNKNOWN_BORROWER", 404, "Borrower not found")
     }
 
     const [result] = await db.insert(schema.loans).values({
@@ -92,7 +97,7 @@ export function buildLoansService(db: DB) {
       },
     })
     if (!loan || loan.book.ownerId !== ownerId) {
-      throw new Error("BOOK_NOT_OWNED")
+      throw new AppError("BOOK_NOT_OWNED", 404, "Book not found or not yours")
     }
 
     const today = new Date().toISOString().slice(0, 10)
