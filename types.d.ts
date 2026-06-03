@@ -4,7 +4,6 @@ import type {
   BooksService,
   LoansService,
   MembersService,
-  User,
   UsersService,
 } from "./services/index.ts"
 
@@ -18,6 +17,13 @@ declare module "fastify" {
     loansService: LoansService
   }
   interface FastifyRequest {
-    currentUser: User | null
+    currentUser: { id: number } | null
+  }
+}
+
+declare module "@fastify/jwt" {
+  interface FastifyJWT {
+    payload: { userId: number }
+    user: { userId: number }
   }
 }
