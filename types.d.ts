@@ -5,6 +5,7 @@ import type {
   LoansService,
   MembersService,
   UsersService,
+  RefreshTokensService,
 } from "./services/index.ts"
 
 declare module "fastify" {
@@ -15,6 +16,7 @@ declare module "fastify" {
     membersService: MembersService
     usersService: UsersService
     loansService: LoansService
+    refreshTokensService: RefreshTokensService
   }
   interface FastifyRequest {
     currentUser: { id: number } | null

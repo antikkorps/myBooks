@@ -24,7 +24,17 @@ async function authRoutes(fastify: FastifyInstance) {
       throw new AppError("INVALID_CREDENTIALS", 401, "Invalid email or password")
     }
     const accessToken = fastify.jwt.sign({ userId: user.id })
-    return { accessToken }
+    const refreshToken = await fastify.refreshTokensService.issue(user.id)
+    return { accessToken, refreshToken }
+  })
+
+  fastify.post("/refresh-token", async (request, reply) => {
+    const { refreshToken } = request.body as { refreshToken: string }
+    const { userId, refreshToken: newRefreshToken } =
+      await fastify.refreshTokensService.rotate(refreshToken)
+    const accessToken = fastify.jwt.sign({ userId })
+
+    return { accessToken, refreshToken: newRefreshToken }
   })
 }
 
