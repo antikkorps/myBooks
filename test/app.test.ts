@@ -1,8 +1,8 @@
-import bcrypt from "bcrypt"
 import assert from "node:assert/strict"
 import { after, before, test } from "node:test"
 import { buildApp } from "../app.ts"
 import { AppError } from "../types/error.ts"
+import { fakeUser } from "./helper.ts"
 
 let app: Awaited<ReturnType<typeof buildApp>>
 
@@ -47,8 +47,7 @@ test("unknown email => should return 401 INVALID_CREDENTIALS", async () => {
 })
 
 test("wrong password => should return 401 INVALID_CREDENTIALS", async () => {
-  const hash = await bcrypt.hash("TheRealOne", 12)
-  app.usersService = { findByEmail: async () => ({ id: 1, passwordHash: hash }) } as any
+  app.usersService = { findByEmail: async () => await fakeUser("TheRealOne") } as any
   const response = await app.inject({
     method: "POST",
     url: "/login",
@@ -62,8 +61,7 @@ test("wrong password => should return 401 INVALID_CREDENTIALS", async () => {
 })
 
 test("valid credentials => should return 200 with accessToken and refreshToken", async () => {
-  const hash = await bcrypt.hash("TheRealOne", 12)
-  app.usersService = { findByEmail: async () => ({ id: 1, passwordHash: hash }) } as any
+  app.usersService = { findByEmail: async () => await fakeUser("TheRealOne") } as any
   app.refreshTokensService = {
     issue: async (userId: number) => `refresh-token-for-${userId}`,
   } as any
