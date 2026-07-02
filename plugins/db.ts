@@ -12,7 +12,7 @@ declare module "fastify" {
 }
 
 export default fp(async function drizzlePlugin(fastify: FastifyInstance) {
-  const pool = mysql.createPool(process.env.MYSQL_CONNECTION_STRING!)
+  const pool = mysql.createPool(fastify.config.MYSQL_CONNECTION_STRING)
 
   const db = drizzle(pool, {
     schema: { ...schema, ...relations },

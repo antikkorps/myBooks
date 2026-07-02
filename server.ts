@@ -1,11 +1,21 @@
 import autoload from "@fastify/autoload"
+import env from "@fastify/env"
 import Fastify from "fastify"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 const isDev = process.env.NODE_ENV !== "production"
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url))
-
+const configSchema = {
+  type: "object",
+  required: ["MYSQL_CONNECTION_STRING", "JWT_SECRET"],
+  properties: {
+    MYSQL_CONNECTION_STRING: { type: "string" },
+    JWT_SECRET: { type: "string", minLength: 32 },
+    NODE_ENV: { type: "string", default: "development" },
+    PORT: { type: "integer", default: 8080 },
+  },
+}
 const fastify = Fastify({
   logger: isDev
     ? {
@@ -19,6 +29,9 @@ const fastify = Fastify({
       }
     : true,
 })
+
+fastify.register(env, { schema: configSchema })
+
 fastify.register(autoload, {
   dir: join(__dirname, "plugins"),
 })

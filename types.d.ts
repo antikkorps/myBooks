@@ -4,8 +4,8 @@ import type {
   BooksService,
   LoansService,
   MembersService,
-  UsersService,
   RefreshTokensService,
+  UsersService,
 } from "./services/index.ts"
 
 declare module "fastify" {
@@ -17,6 +17,11 @@ declare module "fastify" {
     usersService: UsersService
     loansService: LoansService
     refreshTokensService: RefreshTokensService
+    config: {
+      MYSQL_CONNECTION_STRING: string
+      JWT_SECRET: string
+      NODE_ENV: string
+    }
   }
   interface FastifyRequest {
     currentUser: { id: number } | null
