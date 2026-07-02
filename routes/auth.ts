@@ -23,6 +23,8 @@ const refreshTokenSchema = {
   },
 }
 
+const DUMMY_HASH = "$2b$12$pd4UXBLlkTYbs.y3QPWMaeximXfx8htnquyjuFxbU9s6YBcDLI9ae"
+
 async function authRoutes(fastify: FastifyInstance) {
   fastify.post("/login", { schema: loginSchema }, async (request, reply) => {
     const { email, password } = request.body as {
@@ -30,7 +32,9 @@ async function authRoutes(fastify: FastifyInstance) {
       password: string
     }
     const user = await fastify.usersService.findByEmail(email)
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    const hash = user?.passwordHash ?? DUMMY_HASH
+    const ok = await bcrypt.compare(password, hash)
+    if (!user || !ok) {
       throw new AppError("INVALID_CREDENTIALS", 401, "Invalid email or password")
     }
     const accessToken = fastify.jwt.sign({ userId: user.id })
