@@ -24,4 +24,10 @@ export default fp(async function (fastify: FastifyInstance) {
       .code(500)
       .send({ code: "INTERNAL_ERROR", message: "Internal Server Error" })
   })
+
+  fastify.setNotFoundHandler((request, reply) => {
+    return reply
+      .code(404)
+      .send({ code: "NOT_FOUND", message: request.url + " not found" })
+  })
 })
