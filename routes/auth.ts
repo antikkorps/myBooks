@@ -26,25 +26,32 @@ const refreshTokenSchema = {
 const DUMMY_HASH = "$2b$12$pd4UXBLlkTYbs.y3QPWMaeximXfx8htnquyjuFxbU9s6YBcDLI9ae"
 
 async function authRoutes(fastify: FastifyInstance) {
-  fastify.post("/login", { schema: loginSchema }, async (request, reply) => {
-    const { email, password } = request.body as {
-      email: string
-      password: string
-    }
-    const user = await fastify.usersService.findByEmail(email)
-    const hash = user?.passwordHash ?? DUMMY_HASH
-    const ok = await bcrypt.compare(password, hash)
-    if (!user || !ok) {
-      throw new AppError("INVALID_CREDENTIALS", 401, "Invalid email or password")
-    }
-    const accessToken = fastify.jwt.sign({ userId: user.id })
-    const refreshToken = await fastify.refreshTokensService.issue(user.id)
-    return { accessToken, refreshToken }
-  })
+  fastify.post(
+    "/login",
+    { schema: loginSchema, config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
+    async (request, reply) => {
+      const { email, password } = request.body as {
+        email: string
+        password: string
+      }
+      const user = await fastify.usersService.findByEmail(email)
+      const hash = user?.passwordHash ?? DUMMY_HASH
+      const ok = await bcrypt.compare(password, hash)
+      if (!user || !ok) {
+        throw new AppError("INVALID_CREDENTIALS", 401, "Invalid email or password")
+      }
+      const accessToken = fastify.jwt.sign({ userId: user.id })
+      const refreshToken = await fastify.refreshTokensService.issue(user.id)
+      return { accessToken, refreshToken }
+    },
+  )
 
   fastify.post(
     "/refresh-token",
-    { schema: refreshTokenSchema },
+    {
+      schema: refreshTokenSchema,
+      config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
+    },
     async (request, reply) => {
       const { refreshToken } = request.body as { refreshToken: string }
       const { userId, refreshToken: newRefreshToken } =
