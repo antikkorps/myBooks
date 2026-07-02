@@ -14,6 +14,11 @@ export default fp(async function (fastify: FastifyInstance) {
       return reply.code(400).send({ code: "VALIDATION_ERROR", message: error.message })
     }
 
+    if (error.statusCode && error.statusCode < 500) {
+      return reply
+        .code(error.statusCode)
+        .send({ code: "CLIENT_ERROR", message: error.message })
+    }
     request.log.error({ err: error }, "unhandled error")
     return reply
       .code(500)
