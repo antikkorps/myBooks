@@ -14,6 +14,7 @@ const configSchema = {
     JWT_SECRET: { type: "string", minLength: 32 },
     NODE_ENV: { type: "string", default: "development" },
     PORT: { type: "integer", default: 8080 },
+    CORS_ORIGIN: { type: "string", default: "http://localhost:3000" },
   },
 }
 const fastify = Fastify({

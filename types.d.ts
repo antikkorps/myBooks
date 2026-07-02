@@ -21,6 +21,8 @@ declare module "fastify" {
       MYSQL_CONNECTION_STRING: string
       JWT_SECRET: string
       NODE_ENV: string
+      PORT: number
+      CORS_ORIGIN: string
     }
   }
   interface FastifyRequest {
