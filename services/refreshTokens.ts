@@ -38,8 +38,15 @@ export function buildRefreshTokensService(db: DB) {
     const newRefreshToken = await issue(row.userId)
     return { userId: row.userId, refreshToken: newRefreshToken }
   }
+  async function revoke(token: string) {
+    const tokenHash = createHash("sha256").update(token).digest("hex")
+    await db
+      .update(schema.refreshTokens)
+      .set({ revokedAt: new Date() })
+      .where(eq(schema.refreshTokens.tokenHash, tokenHash))
+  }
 
-  return { issue, rotate }
+  return { issue, rotate, revoke }
 }
 
 export type RefreshTokensService = ReturnType<typeof buildRefreshTokensService>

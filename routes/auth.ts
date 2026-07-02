@@ -13,6 +13,16 @@ const loginSchema = {
   },
 }
 
+const refreshTokenSchema = {
+  body: {
+    type: "object",
+    properties: {
+      refreshToken: { type: "string" },
+    },
+    required: ["refreshToken"],
+  },
+}
+
 async function authRoutes(fastify: FastifyInstance) {
   fastify.post("/login", { schema: loginSchema }, async (request, reply) => {
     const { email, password } = request.body as {
@@ -28,13 +38,23 @@ async function authRoutes(fastify: FastifyInstance) {
     return { accessToken, refreshToken }
   })
 
-  fastify.post("/refresh-token", async (request, reply) => {
-    const { refreshToken } = request.body as { refreshToken: string }
-    const { userId, refreshToken: newRefreshToken } =
-      await fastify.refreshTokensService.rotate(refreshToken)
-    const accessToken = fastify.jwt.sign({ userId })
+  fastify.post(
+    "/refresh-token",
+    { schema: refreshTokenSchema },
+    async (request, reply) => {
+      const { refreshToken } = request.body as { refreshToken: string }
+      const { userId, refreshToken: newRefreshToken } =
+        await fastify.refreshTokensService.rotate(refreshToken)
+      const accessToken = fastify.jwt.sign({ userId })
 
-    return { accessToken, refreshToken: newRefreshToken }
+      return { accessToken, refreshToken: newRefreshToken }
+    },
+  )
+
+  fastify.post("/logout", { schema: refreshTokenSchema }, async (request, reply) => {
+    const { refreshToken } = request.body as { refreshToken: string }
+    await fastify.refreshTokensService.revoke(refreshToken)
+    return reply.code(204).send()
   })
 }
 
