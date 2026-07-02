@@ -2,6 +2,7 @@ import bcrypt from "bcrypt"
 import assert from "node:assert/strict"
 import { after, before, test } from "node:test"
 import { buildApp } from "../app.ts"
+import { AppError } from "../types/error.ts"
 
 let app: Awaited<ReturnType<typeof buildApp>>
 
@@ -77,4 +78,48 @@ test("valid credentials => should return 200 with accessToken and refreshToken",
   assert.equal(response.statusCode, 200)
   assert.ok(response.json().accessToken)
   assert.ok(response.json().refreshToken)
+})
+
+test("POST invalid refresh route => should return 400 VALIDATION_ERROR", async () => {
+  const response = await app.inject({
+    method: "POST",
+    url: "/refresh-token",
+    payload: {},
+  })
+  assert.equal(response.statusCode, 400)
+  assert.equal(response.json().code, "VALIDATION_ERROR")
+})
+
+test("POST valid refresh route => should return 200 with new accessToken and refreshToken", async () => {
+  app.refreshTokensService = {
+    rotate: async (refreshToken: string) => ({
+      userId: 1,
+      refreshToken: `new-${refreshToken}`,
+    }),
+  } as any
+  const response = await app.inject({
+    method: "POST",
+    url: "/refresh-token",
+    payload: {
+      refreshToken: "old-refresh-token",
+    },
+  })
+  assert.equal(response.statusCode, 200)
+  assert.ok(response.json().accessToken)
+  assert.ok(response.json().refreshToken)
+})
+
+test("POST /refresh-token with invalid token => 401 INVALID_REFRESH_TOKEN", async () => {
+  app.refreshTokensService = {
+    rotate: async () => {
+      throw new AppError("INVALID_REFRESH_TOKEN", 401)
+    },
+  } as any
+  const response = await app.inject({
+    method: "POST",
+    url: "/refresh-token",
+    payload: { refreshToken: "invalid" },
+  })
+  assert.equal(response.statusCode, 401)
+  assert.equal(response.json().code, "INVALID_REFRESH_TOKEN")
 })
